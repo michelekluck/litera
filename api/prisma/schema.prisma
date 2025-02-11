@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model author {
+  id          Int           @id @default(autoincrement())
+  name        String        @db.VarChar(100)
+  book_author book_author[]
+}
+
+model book {
+  id             Int              @id @default(autoincrement())
+  title          String           @db.VarChar(254)
+  category       String?          @db.VarChar(45)
+  year           Int?
+  description    String?          @db.VarChar(254)
+  book_author    book_author[]
+  publisher_book publisher_book[]
+  user_book      user_book[]
+}
+
+model book_author {
+  book_id   Int
+  author_id Int
+  id        Int    @default(autoincrement())
+  author    author @relation(fields: [author_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  book      book   @relation(fields: [book_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([book_id, author_id], map: "pk_book_author")
+}
+
+model publisher {
+  id             Int              @id @default(autoincrement())
+  name           String           @db.VarChar(100)
+  publisher_book publisher_book[]
+}
+
+model publisher_book {
+  publisher_id Int
+  book_id      Int
+  id           Int       @default(autoincrement())
+  book         book      @relation(fields: [book_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  publisher    publisher @relation(fields: [publisher_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([publisher_id, book_id], map: "pk_publisher_book")
+}
+
+model user {
+  id        Int         @id @default(autoincrement())
+  name      String      @db.VarChar(45)
+  email     String      @unique @db.VarChar(45)
+  password  String      @db.VarChar(100)
+  user_book user_book[]
+}
+
+model user_book {
+  user_id  Int?
+  book_id  Int?
+  status   String   @db.VarChar(45)
+  favorite Boolean? @default(false)
+  id       Int      @id @default(autoincrement())
+  book     book?    @relation(fields: [book_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user     user?    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
