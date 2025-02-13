@@ -66,10 +66,10 @@ const createBook = async (req, reply) => {
             }
         }
 
-        reply.status(201).json({message: 'Livro criado com sucesso!', book});
+        reply.status(201).send({message: 'Livro criado com sucesso!', book});
     } catch (error) {
         console.log(error);
-        reply.status(500).json({ error: 'Erro ao criar livro'});
+        reply.status(500).send({ error: 'Erro ao criar livro'});
     }
 };
 
