@@ -1,23 +1,9 @@
-require('dotenv').config();
-const express = require('express');
-const { PrismaClient, Prisma } = require('@prisma/client');
-
-const app = express();
-const PORT = process.env.PORT || 3000;
+import 'dotenv/config';;
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-app.use(express.json());
-
-app.get('/', (req, res) => {
-    res.send('API funcionando!');
-});
-
-app.listen(PORT, () => {
-    console.log(`Servidor rodando na porta ${PORT}`);
-});
-
-app.post('/books', async (req, res)=> {
+const createBook = async (req, reply) => {
     try {
         const { title, category, year, description, authors } = req.body;
 
@@ -30,8 +16,20 @@ app.post('/books', async (req, res)=> {
                 description,
                 book_author: {
                     create: authors.map(authorName => ({
-                        autho
+                        author: {
+                            connectOrCreate: {
+                                where: { name: authorName},
+                                create: { name: authorName}
+                            }
+                        }
                     }))
+                }
+            },
+            include: {
+                book_author: {
+                    include: {
+                        author: true, 
+                    }
                 }
             }
         });
@@ -68,9 +66,11 @@ app.post('/books', async (req, res)=> {
             }
         }
 
-        res.status(201).json({message: 'Livro criado com sucesso!', book});
+        reply.status(201).json({message: 'Livro criado com sucesso!', book});
     } catch (error) {
         console.log(error);
-        res.status(500).json({ error: 'Erro ao criar livro'});
+        reply.status(500).json({ error: 'Erro ao criar livro'});
     }
-});
+};
+
+export { createBook };
