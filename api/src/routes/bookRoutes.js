@@ -1,4 +1,4 @@
-import { createBook, getBooks, deleteBook } from '../controllers/bookController.js';
+import { createBook, getBooks, deleteBook, updateBook } from '../controllers/bookController.js';
 
 async function bookRoutes(fastify, options) {
     //POST
@@ -9,6 +9,9 @@ async function bookRoutes(fastify, options) {
 
     //DELETE
     fastify.delete('/books/:id', deleteBook);
+
+    //UPDATE 
+    fastify.put('/books/:id', updateBook)
 }
 
 

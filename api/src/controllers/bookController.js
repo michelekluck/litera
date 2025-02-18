@@ -4,10 +4,12 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 // criar livro
-const createBook = async (req, reply) => {
+const createBook = async (req, reply) => { // req -> contem os dados enviados na requisição, reply -> objeto usado para enviar uma resposta ao cliente
     try {
+        // pegando os seguintes campos do corpo da requisição
         const { title, category, year, description, authors } = req.body;
 
+        // cria um novo livro
         const book = await prisma.book.create({
             data: { 
                 title, 
@@ -15,28 +17,30 @@ const createBook = async (req, reply) => {
                 year, 
                 description,
                 book_author: {
-                    create: authors.map(authorName => ({
+                    create: authors.map(authorName => ({ // percorre o array de autores
                         author: {
-                            connectOrCreate: {
-                                where: { name: authorName},
-                                create: { name: authorName}
+                            connectOrCreate: { // funcionalidade do prisma
+                                where: { name: authorName}, // procura um autor com esse nome (passado na requisiçao)
+                                create: { name: authorName} // se nao achar, cria um novo
                             }
                         }
                     }))
                 }
             },
-            include: {
-                book_author: {
+            include: { 
+                book_author: { // inclui a relação com a tabela book_author
                     include: {
-                        author: true, 
+                        author: true, // dentro de book_author, inclui os dados do autor
                     }
                 }
             }
         });
 
-        for (const authorName of authors) {
-            let author = await prisma.author.findFirst ({
-                where: {
+        for (const authorName of authors) { // itera sobre a lista de autores recebido no req.body
+            // procura no bd se ja existe um autor com o nome fornecido
+            // se encontrar, ele é armazenado na variavel author
+            let author = await prisma.author.findFirst ({ 
+                where: { 
                     name: authorName
                 }
             });
@@ -124,4 +128,56 @@ const deleteBook = async (req, reply) => {
     }
 }
 
-export { createBook, getBooks, deleteBook };
+// editar livro
+const updateBook = async (req, reply) => {
+    try {
+        const { id } = req.params;
+        const { title, category, year, description, authors } = req.body;
+
+        // verifica se o livro existe
+        const existingBook = await prisma.book.findUnique({
+            where: { id: Number(id) },
+        });
+
+        if (!existingBook) {
+            return reply.status(404).send({ error: "Livro não encontrado" });
+        }
+        
+        // Atualiza os dados o livro
+        const updatedBook = await prisma.book.update({
+            where: { id: Number(id) },
+            data: {
+                title,
+                category,
+                year,
+                description,
+                book_author: {
+                    deleteMany: {}, // remove as relações antigas
+                    create: authors.map(authorName => ({
+                        author: {
+                            connectOrCreate: {
+                                where: { name: authorName },
+                                create: { name: authorName }
+                            }
+                        }
+                    }))
+                }
+            },
+            include: {
+                book_author: {
+                    include: {
+                        author: true
+                    }
+                }
+            }
+        });
+
+        return reply.send({ message: "Livro atualizado com sucesso", updatedBook});
+    } catch (error) {
+        console.error(error);
+        return reply.status(500).send({ error: "Erro ao atualizar livro" });
+    }
+};
+
+export { createBook, getBooks, deleteBook, updateBook };
+
